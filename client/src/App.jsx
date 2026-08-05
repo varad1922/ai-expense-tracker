@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ExpenseList from "./components/ExpenseList";
+import ExpenseForm from "./components/ExpenseForm";
 
 function App() {
 
@@ -9,20 +11,25 @@ function App() {
   const [amount, setAmount] = useState("");
 
 function handleAddExpense() {
-  if (title.trim() === "" || amount === "") {
+  if (title.trim() === "" || amount.trim() === "") {
     alert("Please enter both title and amount.");
+    return;
+  }
+
+  if (Number(amount) <= 0) {
+    alert("Amount must be greater than 0.");
     return;
   }
   
   const newExpense = {
     id: Date.now(),
-    title: title,
+    title,
     amount: Number(amount),
   };
 
   setExpenses([
-  ...expenses,
-  newExpense,
+    newExpense,
+    ...expenses,
   ]);
 
   setTitle("");
@@ -35,39 +42,15 @@ function handleAddExpense() {
 
       <h1>Expense Tracker</h1>
 
-      <input
-        type="text"
-        placeholder="Enter Expense"
-        value={title}
-        onChange={(event)=> setTitle(event.target.value)}
+      <ExpenseForm
+        title={title}
+        amount={amount}
+        setTitle={setTitle}
+        setAmount={setAmount}
+        handleAddExpense={handleAddExpense}
       />
 
-      <br />
-      <br />
-
-      <input
-        type="number"
-        placeholder="Enter Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
-
-      <br />
-      <br />
-
-      <button onClick={handleAddExpense}>Add Expense</button>
-
-      <h2>Expenses</h2>
-
-      {
-        expenses.map((expense) => (
-        <div key={expense.id}>
-        <h3>{expense.title}</h3>
-        <p>₹{expense.amount}</p>
-        <hr />
-        </div>
-      ))
-    }
+      <ExpenseList expenses={expenses} />
 
     </div>
   );
