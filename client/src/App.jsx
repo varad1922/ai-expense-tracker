@@ -16,6 +16,7 @@ function handleAddExpense() {
     return;
   }
 
+
   if (Number(amount) <= 0) {
     alert("Amount must be greater than 0.");
     return;
@@ -37,6 +38,12 @@ function handleAddExpense() {
 
 }
 
+function handleDeleteExpense(id){
+  setExpenses(
+    expenses.filter((expense)=>expense.id !== id)
+  );
+}
+
   return (
     <div>
 
@@ -50,7 +57,10 @@ function handleAddExpense() {
         handleAddExpense={handleAddExpense}
       />
 
-      <ExpenseList expenses={expenses} />
+      <ExpenseList
+        expenses={expenses}
+        onDelete={handleDeleteExpense}
+      />
 
     </div>
   );
