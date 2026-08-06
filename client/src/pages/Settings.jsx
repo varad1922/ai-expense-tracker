@@ -2,18 +2,13 @@ import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 const Settings = () => {
-  const { user, updateProfile, theme, setTheme } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [error, setError] = useState('');
   
-  const handleSave = async (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
-    setError('');
-    const res = await updateProfile(name);
-    if (!res.success) {
-      setError(res.message);
-    }
+    alert('Settings saved! (Mock implementation)');
   };
 
   return (
@@ -22,7 +17,6 @@ const Settings = () => {
       
       <div className="glass-panel" style={{ padding: 'var(--space-xl)', maxWidth: '600px' }}>
         <h3 style={{ marginBottom: 'var(--space-md)' }}>Profile Information</h3>
-        {error && <div style={{ color: 'var(--danger)', marginBottom: 'var(--space-md)' }}>{error}</div>}
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label className="form-label">Name</label>
@@ -47,12 +41,8 @@ const Settings = () => {
           
           <div className="form-group" style={{ marginTop: 'var(--space-lg)' }}>
             <label className="form-label">Theme Preference</label>
-            <select 
-              className="form-input"
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-            >
-              <option value="light">Light Theme</option>
+            <select className="form-input">
+              <option value="light">Light Theme (Active)</option>
               <option value="dark">Dark Theme</option>
             </select>
           </div>
