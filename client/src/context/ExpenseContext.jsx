@@ -1,44 +1,73 @@
 import { createContext, useState, useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
 
 export const ExpenseContext = createContext();
 
+const API_URL = "http://localhost:5000/api/expenses";
+
 export const ExpenseProvider = ({ children }) => {
-  const [expenses, setExpenses] = useState(() => {
-    const saved = localStorage.getItem("expenses");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [expenses, setExpenses] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
 
   const categories = ["Food", "Travel", "Bills", "Shopping", "Entertainment", "Other"];
 
+  const fetchExpenses = async () => {
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      setExpenses(data);
+    } catch (error) {
+      console.error("Error fetching expenses", error);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-  }, [expenses]);
+    fetchExpenses();
+  }, []);
 
-  const addExpense = (expense) => {
-    const newExpense = {
-      _id: uuidv4(),
-      ...expense,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setExpenses((prev) => [newExpense, ...prev]);
+  const addExpense = async (expense) => {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(expense),
+      });
+      const data = await res.json();
+      setExpenses((prev) => [data, ...prev]);
+    } catch (error) {
+      console.error("Error adding expense", error);
+    }
   };
 
-  const editExpense = (id, updatedExpense) => {
-    setExpenses((prev) =>
-      prev.map((exp) =>
-        exp._id === id
-          ? { ...exp, ...updatedExpense, updatedAt: new Date().toISOString() }
-          : exp
-      )
-    );
+  const editExpense = async (id, updatedExpense) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedExpense),
+      });
+      const data = await res.json();
+      setExpenses((prev) =>
+        prev.map((exp) => (exp._id === id ? data : exp))
+      );
+    } catch (error) {
+      console.error("Error updating expense", error);
+    }
   };
 
-  const deleteExpense = (id) => {
-    setExpenses((prev) => prev.filter((exp) => exp._id !== id));
+  const deleteExpense = async (id) => {
+    try {
+      await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+      setExpenses((prev) => prev.filter((exp) => exp._id !== id));
+    } catch (error) {
+      console.error("Error deleting expense", error);
+    }
   };
 
   return (
