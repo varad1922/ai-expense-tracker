@@ -4,6 +4,7 @@ function ExpenseForm({
   setTitle,
   setAmount,
   handleAddExpense,
+  editingId,
 }) {
   return (
     <div>
@@ -28,7 +29,7 @@ function ExpenseForm({
       <br />
 
       <button onClick={handleAddExpense}>
-        Add Expense
+        {editingId !== null ? "Update Expense" : "Add Expense"}
       </button>
     </div>
   );

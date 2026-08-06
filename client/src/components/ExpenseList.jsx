@@ -1,6 +1,6 @@
 import ExpenseCard from "./ExpenseCard";
 
-function ExpenseList({ expenses, onDelete }) {
+function ExpenseList({ expenses, onDelete, onEdit }) {
   return (
     <div>
       <h2>Expenses</h2>
@@ -10,6 +10,7 @@ function ExpenseList({ expenses, onDelete }) {
           key={expense.id}
           expense={expense}
           onDelete={onDelete}
+          onEdit={onEdit}
         />
       ))}
     </div>
