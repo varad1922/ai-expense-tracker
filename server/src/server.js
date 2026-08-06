@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import expenseRoutes from './routes/expenseRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import connectDB from './config/db.js';
 
@@ -20,6 +21,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/auth', authRoutes);
 
 // Root route
 app.get('/', (req, res) => {
