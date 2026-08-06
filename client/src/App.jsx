@@ -10,6 +10,8 @@ function App() {
 
   const [amount, setAmount] = useState("");
 
+  const [editingId, setEditingId] = useState(null);
+
 function handleAddExpense() {
   if (title.trim() === "" || amount.trim() === "") {
     alert("Please enter both title and amount.");
@@ -21,7 +23,26 @@ function handleAddExpense() {
     alert("Amount must be greater than 0.");
     return;
   }
-  
+
+  if (editingId !== null) {
+  setExpenses(
+    expenses.map((expense) =>
+      expense.id === editingId
+        ? {
+            ...expense,
+            title,
+            amount: Number(amount),
+          }
+        : expense
+     ) 
+    );
+
+    setEditingId(null);
+    setTitle("");
+    setAmount("");
+
+    return;
+  }
   const newExpense = {
     id: Date.now(),
     title,
@@ -44,6 +65,16 @@ function handleDeleteExpense(id){
   );
 }
 
+function handleEditExpense(id){
+  const expenseToEdit = expenses.find(
+    (expense)=>expense.id===id
+  );
+
+  setTitle(expenseToEdit.title);
+  setAmount(expenseToEdit.amount.toString());
+  setEditingId(id);
+}
+
   return (
     <div>
 
@@ -55,11 +86,13 @@ function handleDeleteExpense(id){
         setTitle={setTitle}
         setAmount={setAmount}
         handleAddExpense={handleAddExpense}
+        editingId={editingId}
       />
 
       <ExpenseList
         expenses={expenses}
         onDelete={handleDeleteExpense}
+        onEdit={handleEditExpense}
       />
 
     </div>
