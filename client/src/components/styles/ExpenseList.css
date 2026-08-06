@@ -1,0 +1,18 @@
+.expense-list {
+    margin-top: 20px;
+}
+
+.expense-list h2 {
+    color: #1e293b;
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.empty-message {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    color: #64748b;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}

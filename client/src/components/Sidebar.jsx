@@ -1,0 +1,69 @@
+import { NavLink } from "react-router-dom";
+import { FiHome, FiPieChart, FiSettings, FiMessageSquare } from "react-icons/fi";
+
+const Sidebar = ({ isOpen }) => {
+  const menuItems = [
+    { name: "Dashboard", path: "/", icon: <FiHome size={20} /> },
+    { name: "Analytics", path: "/analytics", icon: <FiPieChart size={20} /> },
+    { name: "AI Assistant", path: "/ai", icon: <FiMessageSquare size={20} /> },
+    { name: "Settings", path: "/settings", icon: <FiSettings size={20} /> },
+  ];
+
+  return (
+    <aside
+      className="glass-panel"
+      style={{
+        width: isOpen ? '250px' : '0px',
+        opacity: isOpen ? 1 : 0,
+        height: 'calc(100vh - 72px)',
+        position: 'sticky',
+        top: '72px',
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+        borderRight: isOpen ? '1px solid var(--glass-border)' : 'none',
+        borderTopLeftRadius: 0,
+        borderBottomLeftRadius: 0,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div style={{ padding: 'var(--space-lg)' }}>
+        <ul className="flex flex-col gap-sm">
+          {menuItems.map((item) => (
+            <li key={item.name}>
+              <NavLink
+                to={item.path}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-md)',
+                  padding: 'var(--space-sm) var(--space-md)',
+                  borderRadius: 'var(--radius-md)',
+                  color: isActive ? 'white' : 'var(--text-secondary)',
+                  background: isActive ? 'var(--gradient-primary)' : 'transparent',
+                  fontWeight: isActive ? '500' : '400',
+                  transition: 'all var(--transition-fast)',
+                })}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div style={{ marginTop: 'auto', padding: 'var(--space-lg)' }}>
+        <div style={{ padding: 'var(--space-md)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', textAlign: 'center' }}>
+          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)' }}>Monthly Budget</p>
+          <div style={{ height: '6px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+            <div style={{ width: '65%', height: '100%', background: 'var(--success)' }}></div>
+          </div>
+          <p style={{ fontSize: 'var(--font-xs)', marginTop: 'var(--space-sm)', color: 'white' }}>65% Used</p>
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;
