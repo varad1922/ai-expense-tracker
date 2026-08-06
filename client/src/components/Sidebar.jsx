@@ -1,28 +1,13 @@
-import { useContext } from "react";
 import { NavLink } from "react-router-dom";
 import { FiHome, FiPieChart, FiSettings, FiMessageSquare } from "react-icons/fi";
-import { ExpenseContext } from "../context/ExpenseContext";
 
 const Sidebar = ({ isOpen }) => {
-  const { expenses } = useContext(ExpenseContext);
-  
   const menuItems = [
     { name: "Dashboard", path: "/", icon: <FiHome size={20} /> },
     { name: "Analytics", path: "/analytics", icon: <FiPieChart size={20} /> },
     { name: "AI Assistant", path: "/ai", icon: <FiMessageSquare size={20} /> },
     { name: "Settings", path: "/settings", icon: <FiSettings size={20} /> },
   ];
-
-  // Calculate current month's expenses
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  const monthlyExpenses = expenses.filter(exp => {
-    const expDate = new Date(exp.date);
-    return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
-  }).reduce((acc, curr) => acc + curr.amount, 0);
-
-  const budget = 2000; // Mock budget
-  const budgetPercentage = Math.min((monthlyExpenses / budget) * 100, 100).toFixed(0);
 
   return (
     <aside
@@ -70,11 +55,11 @@ const Sidebar = ({ isOpen }) => {
 
       <div style={{ marginTop: 'auto', padding: 'var(--space-lg)' }}>
         <div style={{ padding: 'var(--space-md)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', textAlign: 'center' }}>
-          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)' }}>Monthly Budget ($2000)</p>
+          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)' }}>Monthly Budget</p>
           <div style={{ height: '6px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-            <div style={{ width: `${budgetPercentage}%`, height: '100%', background: budgetPercentage > 90 ? 'var(--danger)' : 'var(--success)', transition: 'width 0.5s ease' }}></div>
+            <div style={{ width: '65%', height: '100%', background: 'var(--success)' }}></div>
           </div>
-          <p style={{ fontSize: 'var(--font-xs)', marginTop: 'var(--space-sm)', color: 'var(--text-primary)' }}>{budgetPercentage}% Used (${monthlyExpenses.toFixed(0)})</p>
+          <p style={{ fontSize: 'var(--font-xs)', marginTop: 'var(--space-sm)', color: 'white' }}>65% Used</p>
         </div>
       </div>
     </aside>
