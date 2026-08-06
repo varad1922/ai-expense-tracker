@@ -5,6 +5,18 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const addNotification = (message) => {
+    const newNotif = { id: Date.now(), message, time: new Date() };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
 
   useEffect(() => {
     // Check if user is logged in
@@ -29,6 +41,7 @@ export const AuthProvider = ({ children }) => {
       
       setUser(data);
       localStorage.setItem('user', JSON.stringify(data));
+      addNotification('Successfully logged in.');
       return { success: true };
     } catch (error) {
       return { success: false, message: error.message };
@@ -49,6 +62,29 @@ export const AuthProvider = ({ children }) => {
 
       setUser(data);
       localStorage.setItem('user', JSON.stringify(data));
+      addNotification('Account created successfully.');
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
+  const updateProfile = async (name) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Profile update failed');
+
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+      addNotification('Profile updated successfully.');
       return { success: true };
     } catch (error) {
       return { success: false, message: error.message };
@@ -58,10 +94,21 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    addNotification('Logged out successfully.');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      register, 
+      logout, 
+      updateProfile, 
+      loading, 
+      theme, 
+      setTheme,
+      notifications 
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );
