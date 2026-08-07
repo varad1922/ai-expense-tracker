@@ -1,5 +1,9 @@
 import { NavLink } from "react-router-dom";
 import { FiHome, FiPieChart, FiSettings, FiMessageSquare } from "react-icons/fi";
+import { useContext } from "react";
+import { ExpenseContext } from "../context/ExpenseContext";
+import { AuthContext } from "../context/AuthContext";
+import { motion } from "framer-motion";
 
 const Sidebar = ({ isOpen }) => {
   const menuItems = [
@@ -8,6 +12,24 @@ const Sidebar = ({ isOpen }) => {
     { name: "AI Assistant", path: "/ai", icon: <FiMessageSquare size={20} /> },
     { name: "Settings", path: "/settings", icon: <FiSettings size={20} /> },
   ];
+
+  const { expenses } = useContext(ExpenseContext) || { expenses: [] };
+  const { user } = useContext(AuthContext) || { user: {} };
+
+  // Calculate current month's expenses
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const currentMonthExpenses = (expenses || []).reduce((acc, expense) => {
+    const expenseDate = new Date(expense.date);
+    if (expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear) {
+      return acc + Number(expense.amount);
+    }
+    return acc;
+  }, 0);
+
+  const budgetLimit = user?.monthlyBudget || 50000;
+  const percentageUsed = Math.min(100, Math.round((currentMonthExpenses / budgetLimit) * 100));
 
   return (
     <aside
@@ -30,7 +52,7 @@ const Sidebar = ({ isOpen }) => {
       <div style={{ padding: 'var(--space-lg)' }}>
         <ul className="flex flex-col gap-sm">
           {menuItems.map((item) => (
-            <li key={item.name}>
+            <motion.li key={item.name} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <NavLink
                 to={item.path}
                 style={({ isActive }) => ({
@@ -48,18 +70,18 @@ const Sidebar = ({ isOpen }) => {
                 {item.icon}
                 <span>{item.name}</span>
               </NavLink>
-            </li>
+            </motion.li>
           ))}
         </ul>
       </div>
 
       <div style={{ marginTop: 'auto', padding: 'var(--space-lg)' }}>
         <div style={{ padding: 'var(--space-md)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', textAlign: 'center' }}>
-          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)' }}>Monthly Budget</p>
+          <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)' }}>Monthly Budget (₹{budgetLimit.toLocaleString()})</p>
           <div style={{ height: '6px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-            <div style={{ width: '65%', height: '100%', background: 'var(--success)' }}></div>
+            <div style={{ width: `${percentageUsed}%`, height: '100%', background: percentageUsed > 90 ? 'var(--danger)' : percentageUsed > 75 ? 'var(--warning)' : 'var(--success)', transition: 'width 0.5s ease-in-out' }}></div>
           </div>
-          <p style={{ fontSize: 'var(--font-xs)', marginTop: 'var(--space-sm)', color: 'white' }}>65% Used</p>
+          <p style={{ fontSize: 'var(--font-xs)', marginTop: 'var(--space-sm)', color: 'white' }}>{percentageUsed}% Used (₹{currentMonthExpenses.toLocaleString()})</p>
         </div>
       </div>
     </aside>

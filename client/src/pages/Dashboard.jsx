@@ -3,15 +3,23 @@ import DashboardStats from "../components/DashboardStats";
 import ExpenseForm from "../components/ExpenseForm";
 import ExpenseList from "../components/ExpenseList";
 import SearchBar from "../components/SearchBar";
+import { motion } from "framer-motion";
 
 const Dashboard = () => {
   const [currentExpense, setCurrentExpense] = useState(null);
 
   return (
-    <div className="container" style={{ padding: 'var(--space-xl) 0' }}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.4 }}
+      className="container" 
+      style={{ padding: 'var(--space-xl) 0' }}
+    >
       <div style={{ marginBottom: 'var(--space-xl)' }}>
-        <h1 style={{ fontSize: 'var(--font-3xl)', fontWeight: '700', letterSpacing: '-1px', marginBottom: 'var(--space-xs)' }}>Overview</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Track and manage your expenses with AI insights.</p>
+        <h1 style={{ fontSize: 'var(--font-3xl)', fontWeight: '700', letterSpacing: '-1px', marginBottom: 'var(--space-xs)' }}>Overview 📊</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>Track and manage your expenses with AI insights 🤖.</p>
       </div>
 
       <DashboardStats />
@@ -29,7 +37,7 @@ const Dashboard = () => {
           <ExpenseList onEdit={(expense) => setCurrentExpense(expense)} />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

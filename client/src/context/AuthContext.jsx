@@ -15,6 +15,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (user?.theme === 'dark') {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
+    }
+  }, [user?.theme]);
+
   const login = async (email, password) => {
     try {
       const res = await fetch('http://localhost:5000/api/auth/login', {
@@ -55,13 +63,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = async (name, theme, monthlyBudget) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ name, theme, monthlyBudget }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Update failed');
+
+      setUser(data);
+      localStorage.setItem('user', JSON.stringify(data));
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );
