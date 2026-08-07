@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useExpenses } from "../hooks/useExpenses";
+import { motion } from "framer-motion";
 import { FiPlus, FiSave } from "react-icons/fi";
+
+const categoryEmojis = {
+  "Food": "🍔 Food",
+  "Travel": "✈️ Travel",
+  "Bills": "🧾 Bills",
+  "Shopping": "🛍️ Shopping",
+  "Entertainment": "🍿 Entertainment",
+  "Other": "📦 Other"
+};
 
 const ExpenseForm = ({ currentExpense, clearCurrentExpense }) => {
   const { addExpense, editExpense, categories } = useExpenses();
@@ -30,7 +40,7 @@ const ExpenseForm = ({ currentExpense, clearCurrentExpense }) => {
     }
 
     if (currentExpense) {
-      editExpense(currentExpense._id, formData);
+      editExpense(currentExpense.id, formData);
       clearCurrentExpense();
     } else {
       addExpense(formData);
@@ -41,13 +51,15 @@ const ExpenseForm = ({ currentExpense, clearCurrentExpense }) => {
 
   return (
     <div className="glass-panel" style={{ padding: 'var(--space-lg)', position: 'sticky', top: '100px' }}>
-      <h3 style={{ marginBottom: 'var(--space-md)', fontSize: 'var(--font-lg)', color: 'white' }}>
+      <h3 style={{ marginBottom: 'var(--space-md)', fontSize: 'var(--font-lg)', color: 'var(--text-primary)' }}>
         {currentExpense ? 'Edit Expense' : 'Add New Expense'}
       </h3>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label className="form-label">Title</label>
-          <input 
+          <motion.input 
+            whileFocus={{ scale: 1.02, borderColor: 'var(--accent-primary)' }}
+            whileHover={{ scale: 1.01 }}
             type="text" 
             className="form-input" 
             placeholder="e.g., Pizza" 
@@ -57,7 +69,9 @@ const ExpenseForm = ({ currentExpense, clearCurrentExpense }) => {
         </div>
         <div className="form-group">
           <label className="form-label">Amount (₹)</label>
-          <input 
+          <motion.input 
+            whileFocus={{ scale: 1.02, borderColor: 'var(--accent-primary)' }}
+            whileHover={{ scale: 1.01 }}
             type="number" 
             className="form-input" 
             placeholder="e.g., 500" 
@@ -67,17 +81,21 @@ const ExpenseForm = ({ currentExpense, clearCurrentExpense }) => {
         </div>
         <div className="form-group">
           <label className="form-label">Category</label>
-          <select 
+          <motion.select 
+            whileFocus={{ scale: 1.02, borderColor: 'var(--accent-primary)' }}
+            whileHover={{ scale: 1.01 }}
             className="form-input" 
             value={formData.category} 
             onChange={(e) => setFormData({...formData, category: e.target.value})}
           >
-            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
+            {categories.map(cat => <option key={cat} value={cat}>{categoryEmojis[cat] || cat}</option>)}
+          </motion.select>
         </div>
         <div className="form-group" style={{ marginBottom: 'var(--space-lg)' }}>
           <label className="form-label">Date</label>
-          <input 
+          <motion.input 
+            whileFocus={{ scale: 1.02, borderColor: 'var(--accent-primary)' }}
+            whileHover={{ scale: 1.01 }}
             type="date" 
             className="form-input" 
             value={formData.date} 
@@ -85,20 +103,29 @@ const ExpenseForm = ({ currentExpense, clearCurrentExpense }) => {
           />
         </div>
         
-        <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-          {currentExpense ? <><FiSave /> Update Expense</> : <><FiPlus /> Add Expense</>}
-        </button>
-        {currentExpense && (
-          <button 
-            type="button" 
-            className="btn" 
-            onClick={clearCurrentExpense} 
-            style={{ width: '100%', marginTop: 'var(--space-sm)', color: 'var(--text-secondary)' }}
-          >
-            Cancel
-          </button>
-        )}
-      </form>
+        <motion.button 
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.95 }}
+        type="submit" 
+        className="btn btn-primary" 
+        style={{ width: '100%', marginTop: 'var(--space-md)' }}
+      >
+        {currentExpense ? 'Update Expense' : 'Add Expense'}
+      </motion.button>
+      
+      {currentExpense && (
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.95 }}
+          type="button" 
+          className="btn" 
+          onClick={clearCurrentExpense}
+          style={{ width: '100%', marginTop: 'var(--space-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+        >
+          Cancel Edit
+        </motion.button>
+      )}
+    </form>
     </div>
   );
 };

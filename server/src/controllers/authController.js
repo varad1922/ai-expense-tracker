@@ -39,6 +39,8 @@ export const registerUser = async (req, res) => {
       _id: user.id,
       name: user.name,
       email: user.email,
+      theme: user.theme,
+      monthlyBudget: user.monthlyBudget,
       token: generateToken(user._id),
     });
   } else {
@@ -61,6 +63,8 @@ export const loginUser = async (req, res) => {
       _id: user.id,
       name: user.name,
       email: user.email,
+      theme: user.theme,
+      monthlyBudget: user.monthlyBudget,
       token: generateToken(user._id),
     });
   } else {
@@ -73,5 +77,40 @@ export const loginUser = async (req, res) => {
 // @route   GET /api/auth/me
 // @access  Private
 export const getMe = async (req, res) => {
-  res.status(200).json(req.user);
+  res.status(200).json({
+    _id: req.user.id,
+    name: req.user.name,
+    email: req.user.email,
+    theme: req.user.theme,
+    monthlyBudget: req.user.monthlyBudget,
+  });
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    user.name = req.body.name || user.name;
+    user.theme = req.body.theme || user.theme;
+    if (req.body.monthlyBudget !== undefined) {
+      user.monthlyBudget = req.body.monthlyBudget;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      theme: updatedUser.theme,
+      monthlyBudget: updatedUser.monthlyBudget,
+      token: generateToken(updatedUser._id),
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
 };
