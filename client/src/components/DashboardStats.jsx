@@ -1,15 +1,18 @@
 import { useExpenses } from "../hooks/useExpenses";
 import { FiDollarSign, FiActivity, FiTrendingUp, FiTrendingDown } from "react-icons/fi";
+import { motion } from "framer-motion";
 
 const StatCard = ({ title, value, icon, color, delay }) => (
-  <div 
-    className="glass-panel animate-fade-in" 
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.4 }}
+    className="glass-panel" 
     style={{ 
       padding: 'var(--space-lg)', 
       display: 'flex', 
       alignItems: 'center', 
       gap: 'var(--space-md)',
-      animationDelay: `${delay}s`
     }}
   >
     <div style={{ 
@@ -21,15 +24,15 @@ const StatCard = ({ title, value, icon, color, delay }) => (
     </div>
     <div>
       <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)' }}>{title}</p>
-      <h3 style={{ fontSize: 'var(--font-xl)', fontWeight: '600', color: 'white' }}>{value}</h3>
+      <h3 style={{ fontSize: 'var(--font-xl)', fontWeight: '600', color: 'var(--text-primary)' }}>{value}</h3>
     </div>
-  </div>
+  </motion.div>
 );
 
 const DashboardStats = () => {
   const { expenses } = useExpenses();
 
-  const totalExpenses = expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
+  const totalExpenses = expenses.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
   const totalTransactions = expenses.length;
   const avgExpense = totalTransactions > 0 ? (totalExpenses / totalTransactions).toFixed(2) : 0;
   
