@@ -11,6 +11,9 @@ export const getExpenses = async (req, res) => {
     const expenses = await prisma.expense.findMany({
       where: { userId: req.user.id },
       orderBy: { date: 'desc' },
+      include: {
+        categoryRel: true // This acts as a SQL JOIN under the hood
+      }
     });
     res.status(200).json(expenses);
   } catch (error) {
@@ -27,6 +30,9 @@ export const getExpenseById = async (req, res) => {
   try {
     const expense = await prisma.expense.findUnique({
       where: { id: req.params.id },
+      include: {
+        categoryRel: true // This acts as a SQL JOIN under the hood
+      }
     });
     if (!expense) {
       res.status(404);

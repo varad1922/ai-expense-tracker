@@ -114,3 +114,19 @@ export const updateProfile = async (req, res) => {
     throw new Error('User not found');
   }
 };
+
+// @desc    Delete user profile
+// @route   DELETE /api/auth/profile
+// @access  Private
+export const deleteUser = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    await User.findByIdAndDelete(req.user._id);
+    res.status(200).json({ message: 'User deleted successfully' });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+};
+
