@@ -1,136 +1,243 @@
-import { createContext, useState, useEffect, useContext } from "react";
-import { AuthContext } from "./AuthContext";
+import { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { AuthContext } from './AuthContext';
 
 export const ExpenseContext = createContext();
 
-const API_URL = "http://localhost:5000/api/expenses";
+/**
+ * Environment variable (Task 9 — env wiring):
+ * VITE_API_URL is set in client/.env and injected by Vite at build time.
+ * No file in the codebase hardcodes "http://localhost:5000" anymore.
+ */
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const API_URL  = `${API_BASE}/api/expenses`;
 
 export const ExpenseProvider = ({ children }) => {
-  const [expenses, setExpenses] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("All");
-  const [notifications, setNotifications] = useState([]);
   const { user } = useContext(AuthContext);
 
-  const categories = ["Food", "Travel", "Bills", "Shopping", "Entertainment", "Other"];
+  // ── State (Task 8 — useState patterns) ────────────────────────────────────
+  const [expenses, setExpenses]           = useState([]);
+  const [searchQuery, setSearchQuery]     = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [notifications, setNotifications] = useState([]);
 
-  const getHeaders = () => {
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${user?.token}`,
+  // Per-operation loading and error states — granular feedback to the UI
+  const [loading, setLoading]   = useState(false);  // initial fetch
+  const [error, setError]       = useState(null);
+  const [saving, setSaving]     = useState(false);  // add / edit operations
+  const [deleting, setDeleting] = useState(null);   // id of expense being deleted
+
+  const categories = ['Food', 'Travel', 'Bills', 'Shopping', 'Entertainment', 'Other'];
+
+  const getHeaders = useCallback(() => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${user?.token}`,
+  }), [user?.token]);
+
+  // ── useEffect: fetch expenses (Task 7 — side effects + AbortController) ───
+  //
+  // Demonstrates:
+  //  - AbortController: cancels the in-flight fetch when the component
+  //    unmounts or when `user` changes (e.g. logout while a fetch is pending).
+  //    Without this, a stale response could call setExpenses on an unmounted
+  //    component, causing a React "can't perform state update" warning.
+  //  - Correct dependency array [user]: only re-fetches when the user changes.
+  //  - Cleanup function: the returned () => controller.abort() runs before the
+  //    next effect execution and on unmount.
+
+  useEffect(() => {
+    if (!user?.token) {
+      setExpenses([]);
+      return;
+    }
+
+    const controller = new AbortController(); // AbortController for fetch cancellation
+    setLoading(true);
+    setError(null);
+
+    const fetchExpenses = async () => {
+      try {
+        const res = await fetch(API_URL, {
+          headers: { Authorization: `Bearer ${user.token}` },
+          signal: controller.signal, // link the fetch to the AbortController
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message ?? 'Failed to fetch expenses');
+        }
+
+        const data = await res.json();
+        // Only update state if the fetch wasn't aborted
+        setExpenses(data);
+        setError(null);
+      } catch (err) {
+        if (err.name === 'AbortError') return; // fetch was intentionally cancelled
+        console.error('[ExpenseContext] fetch failed:', err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     };
-  };
 
-  const fetchExpenses = async () => {
-    if (!user || !user.token) return;
-    
-    try {
-      const res = await fetch('http://localhost:5000/api/expenses', {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      });
-      const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.message || 'Failed to fetch');
-      
-      setExpenses(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  useEffect(() => {
     fetchExpenses();
-  }, [user]);
+
+    // Cleanup: abort the fetch when user changes or component unmounts
+    return () => controller.abort();
+  }, [user]); // dependency array: re-run only when `user` changes
+
+  // ── useEffect: Socket.io real-time updates (Task 7 — cleanup) ─────────────
+  //
+  // Demonstrates:
+  //  - Async dynamic import inside useEffect (socket.io-client is large;
+  //    dynamic import avoids it blocking the initial bundle).
+  //  - Cleanup: the returned function calls socket.disconnect() so the
+  //    WebSocket connection is closed when the user logs out.
+  //  - Correct dependency array [user]: reconnects when user changes.
 
   useEffect(() => {
-    if (user && user.token) {
-      import('socket.io-client').then(({ io }) => {
-        const socket = io('http://localhost:5000');
-        
-        socket.emit('join', user._id);
-        
-        socket.on('newExpense', (expense) => {
-          if (expense && expense.title) {
-            setNotifications(prev => [{
-              id: Date.now().toString() + Math.random(),
-              message: `New expense added: ₹${expense.amount} for ${expense.title}`,
-              date: new Date(),
-              read: false
-            }, ...prev]);
-          }
-          fetchExpenses();
-        });
-        
-        socket.on('updateExpense', (expense) => {
-          if (expense && expense.title) {
-            setNotifications(prev => [{
-              id: Date.now().toString() + Math.random(),
-              message: `Expense updated: ${expense.title}`,
-              date: new Date(),
-              read: false
-            }, ...prev]);
-          }
-          fetchExpenses();
-        });
-        
-        socket.on('deleteExpense', (id) => {
-          setNotifications(prev => [{
-            id: Date.now().toString() + Math.random(),
-            message: `An expense was deleted`,
+    if (!user?.token) return;
+
+    let socket;
+
+    const connectSocket = async () => {
+      const { io } = await import('socket.io-client');
+      socket = io(API_BASE);
+
+      socket.emit('join', user._id);
+
+      const pushNotification = (message) =>
+        setNotifications((prev) => [
+          {
+            id: `${Date.now()}-${Math.random()}`,
+            message,
             date: new Date(),
-            read: false
-          }, ...prev]);
-          fetchExpenses();
+            read: false,
+          },
+          ...prev,
+        ]);
+
+      socket.on('newExpense', (expense) => {
+        if (expense?.title) pushNotification(`New expense added: ₹${expense.amount} for ${expense.title}`);
+        // Update local state instead of re-fetching the whole list
+        setExpenses((prev) => {
+          const exists = prev.some((e) => e.id === expense.id);
+          return exists ? prev : [expense, ...prev];
         });
-
-        return () => socket.disconnect();
       });
-    }
-  }, [user]);
 
-  const addExpense = async (expense) => {
+      socket.on('updateExpense', (expense) => {
+        if (expense?.title) pushNotification(`Expense updated: ${expense.title}`);
+        setExpenses((prev) => prev.map((e) => (e.id === expense.id ? expense : e)));
+      });
+
+      socket.on('deleteExpense', (id) => {
+        pushNotification('An expense was deleted');
+        setExpenses((prev) => prev.filter((e) => e.id !== id));
+      });
+    };
+
+    connectSocket();
+
+    // Cleanup: disconnect socket when user changes or component unmounts
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [user]); // dependency array: reconnects on user change
+
+  // ── CRUD operations with optimistic updates (Task 8 — useState patterns) ──
+  //
+  // Optimistic update pattern:
+  //  1. Update local state immediately (instant UI feedback).
+  //  2. Send the request to the server.
+  //  3. On success: replace the optimistic record with the server's response.
+  //  4. On failure: roll back to the previous state.
+
+  const addExpense = async (expenseData) => {
+    setSaving(true);
+
+    // Optimistic: create a temporary local record with a placeholder id
+    const tempId = `temp-${Date.now()}`;
+    const optimisticExpense = { ...expenseData, id: tempId, amount: Number(expenseData.amount) };
+    setExpenses((prev) => [optimisticExpense, ...prev]);
+
     try {
       const res = await fetch(API_URL, {
-        method: "POST",
+        method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify(expense),
+        body: JSON.stringify(expenseData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to add expense');
-      setExpenses((prev) => [data, ...prev]);
-    } catch (error) {
-      console.error("Error adding expense", error);
+      if (!res.ok) throw new Error(data.message ?? 'Failed to add expense');
+
+      // Replace the optimistic record with the real server record
+      setExpenses((prev) => prev.map((e) => (e.id === tempId ? data : e)));
+    } catch (err) {
+      console.error('[ExpenseContext] addExpense failed:', err.message);
+      // Rollback: remove the optimistic record
+      setExpenses((prev) => prev.filter((e) => e.id !== tempId));
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const editExpense = async (id, updatedExpense) => {
+  const editExpense = async (id, updatedData) => {
+    setSaving(true);
+
+    // Optimistic: update immediately in local state
+    const previous = expenses.find((e) => e.id === id);
+    setExpenses((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, ...updatedData, amount: Number(updatedData.amount) } : e))
+    );
+
     try {
       const res = await fetch(`${API_URL}/${id}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify(updatedExpense),
+        body: JSON.stringify(updatedData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to edit expense');
-      setExpenses((prev) =>
-        prev.map((exp) => (exp.id === id ? data : exp))
-      );
-    } catch (error) {
-      console.error("Error updating expense", error);
+      if (!res.ok) throw new Error(data.message ?? 'Failed to update expense');
+
+      // Confirm with the canonical server record
+      setExpenses((prev) => prev.map((e) => (e.id === id ? data : e)));
+    } catch (err) {
+      console.error('[ExpenseContext] editExpense failed:', err.message);
+      // Rollback: restore the previous record
+      if (previous) {
+        setExpenses((prev) => prev.map((e) => (e.id === id ? previous : e)));
+      }
+      setError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
   const deleteExpense = async (id) => {
+    setDeleting(id);
+
+    // Optimistic: remove immediately
+    const previous = expenses.find((e) => e.id === id);
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+
     try {
-      await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE',
         headers: getHeaders(),
       });
-      setExpenses((prev) => prev.filter((exp) => exp.id !== id));
-    } catch (error) {
-      console.error("Error deleting expense", error);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message ?? 'Failed to delete expense');
+      }
+    } catch (err) {
+      console.error('[ExpenseContext] deleteExpense failed:', err.message);
+      // Rollback: re-insert the expense in its original position
+      if (previous) {
+        setExpenses((prev) => [previous, ...prev.filter((e) => e.id !== id)]);
+      }
+      setError(err.message);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -139,12 +246,13 @@ export const ExpenseProvider = ({ children }) => {
       value={{
         expenses,
         categories,
-        searchQuery,
-        setSearchQuery,
-        filterCategory,
-        setFilterCategory,
-        notifications,
-        setNotifications,
+        searchQuery,     setSearchQuery,
+        filterCategory,  setFilterCategory,
+        notifications,   setNotifications,
+        loading,         // true during initial fetch
+        saving,          // true during add/edit
+        deleting,        // id of expense being deleted (null if none)
+        error,           setError,
         addExpense,
         editExpense,
         deleteExpense,
