@@ -36,7 +36,7 @@ Here is the user's recent expense data:
 ${expensesContext || 'No recent expenses.'}
 
 Please answer the user's question concisely, helpfully, and base your insights on their expense data. 
-Format your response using Markdown. Keep it brief and friendly.`;
+You MUST respond with a valid JSON object in the following format: { "response": "Your markdown formatted message here" }`;
 
     // Make the API call to Gemini
     let aiResponseText = "";
@@ -45,9 +45,13 @@ Format your response using Markdown. Keep it brief and friendly.`;
         model: 'gemini-2.5-flash',
         contents: [
           { role: 'user', parts: [{ text: systemPrompt + "\n\nUser Question: " + prompt }] }
-        ]
+        ],
+        config: {
+          responseMimeType: "application/json",
+        }
       });
-      aiResponseText = response.text;
+      const responseJson = JSON.parse(response.text);
+      aiResponseText = responseJson.response;
     } catch (apiError) {
       console.error("Gemini API Error:", apiError);
       // Fallback if API key is not set or invalid
