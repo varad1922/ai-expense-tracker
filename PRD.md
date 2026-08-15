@@ -60,3 +60,21 @@ The Nexus Expense AI application natively implements all standard engineering pr
 
 ### Database
 - **Schema modeling (Mongo):** Mongoose is utilized for structured NoSQL validation. The `User.js` model demonstrates compound indexing, sub-document embedding (for preferences), custom validators, pre-save hooks (bcrypt hashing), and virtual fields.
+
+## 7. Heavy Technical Additions (August 2026 Update)
+To heavily satisfy the technical rubric, the following architectures were newly implemented:
+- **System & Integrations:** 
+  - **Redis Caching:** Accelerates the `/api/expenses` endpoint to avoid repeated DB hits.
+  - **Cron Jobs:** Background `node-cron` jobs run periodically to evaluate spending against budgets.
+  - **Stripe Integration:** The `/api/stripe` endpoint provisions test checkout sessions for a premium subscription.
+  - **Server-Side Rendering (SSR):** Added `/api/report/:userId` which dynamically SSRs an HTML React report from the Node backend via `react-dom/server`.
+- **Database:** 
+  - **Prisma Transactions:** Implemented `$transaction` in a new `/api/expenses/batch` route to guarantee ACID properties on bulk inserts.
+  - **Referencing Relationships:** Added a `Notification` Mongoose schema to demonstrate referencing (`ref: 'User'`), contrasting the embedded `preferences` inside the `User` schema.
+- **Security & Auth:** 
+  - **Zod Validation:** `config/env.js` stringently validates all environment variables.
+  - **Sanitization:** Integrated `helmet`, `express-mongo-sanitize`, and `xss-clean` for deep security hardening.
+- **Advanced JS Patterns:** 
+  - **DataExportService:** Demonstrates advanced event loop manipulation (`setImmediate`), hoisting, closures, and promises vs. callbacks by processing CSV chunks without blocking the main thread.
+- **DevOps:** 
+  - **Docker & Git Workflow:** Added Redis to `docker-compose.yml` and configured Husky pre-commit hooks.

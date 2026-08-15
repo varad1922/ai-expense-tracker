@@ -31,6 +31,7 @@ services:
       - /app/node_modules
     depends_on:
       - mongodb
+      - redis
     restart: unless-stopped
 
   mongodb:
@@ -39,6 +40,12 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
 volumes:

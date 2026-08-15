@@ -6,14 +6,20 @@ import dotenv from 'dotenv';
 import expenseRoutes from './routes/expenseRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import stripeRoutes from './routes/stripeRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import connectDB from './config/db.js';
+import { env } from './config/env.js';
+import { connectRedis } from './config/redis.js';
+import { startCronJobs } from './services/cronService.js';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
 
-// Load env variables
-dotenv.config();
-
-// Connect to database
+// Connect to database and redis
 connectDB();
+connectRedis().catch(err => console.error('Redis init error:', err));
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +40,11 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
+// Security Middleware (Input sanitization & injection awareness)
+app.use(helmet()); // Set security HTTP headers
+app.use(mongoSanitize()); // Prevent NoSQL injection
+app.use(xss()); // Prevent Cross-Site Scripting (XSS)
+
 // Socket.io connection
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
@@ -49,10 +60,15 @@ io.on('connection', (socket) => {
   });
 });
 
+// Start scheduled jobs
+startCronJobs(io);
+
 // Routes
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/report', reportRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -62,8 +78,8 @@ app.get('/', (req, res) => {
 // Error Handling Middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Server running in ${env.NODE_ENV} mode on port ${PORT}`);
 });
